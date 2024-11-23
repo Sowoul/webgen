@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{data.title}}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: {{data.titlebar_color}};
+            --secondary-color: #e64a19;
+            --background-color: #f8f9fa;
+            --white-color: #ffffff;
+            --text-color: {{data.title_text_color}};
+            --button-hover-color: #f44336;
+            --cart-bg-color: #ffffff;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --cart-shadow-color: rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            background-color: var(--background-color);
+            font-family: 'Poppins', sans-serif;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+        }
+        .header {
+            background-color: var(--primary-color);
+            color: var(--white-color);
+            padding: 1.5rem;
+            text-align: center;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px var(--shadow-color);
+        }
+        .header h1 {
+            font-size: 3rem;
+            margin: 0;
+        }
+        .food-item {
+            background-color: var(--white-color);
+            border-radius: 10px;
+            box-shadow: 0 2px 5px var(--shadow-color);
+            margin: 1.5rem 0;
+            overflow: hidden;
+            transition: transform 0.3s ease;
+        }
+        .food-item:hover {
+            transform: translateY(-10px);
+        }
+        .food-item img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+        .food-item-content {
+            padding: 1rem;
+        }
+        .food-item-content h4 {
+            font-size: 1.6rem;
+            margin-bottom: 0.5rem;
+        }
+        .food-item-content p {
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+        }
+        .food-item-content .btn {
+            background-color: var(--primary-color);
+            color: var(--white-color);
+            border: none;
+            font-weight: bold;
+        }
+        .food-item-content .btn:hover {
+            background-color: var(--secondary-color);
+        }
+        .cart-section {
+            position: fixed;
+            bottom: 50px;
+            right: 350px;
+            background-color: var(--cart-bg-color);
+            padding: 1rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px var(--cart-shadow-color);
+            width: 300px;
+            transition: transform 0.3s ease;
+        }
+        .cart-section.show {
+            transform: translateX(0);
+        }
+        .cart-section.hide {
+            transform: translateX(100%);
+        }
+        .cart-items {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .cart-items li {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #ddd;
+        }
+        .cart-items .remove-btn {
+            background-color: var(--button-hover-color);
+            color: var(--white-color);
+            border: none;
+            border-radius: 50%;
+            font-size: 1rem;
+        }
+        .btn-cart {
+            background-color: var(--primary-color);
+            color: var(--white-color);
+            border: none;
+            font-weight: bold;
+        }
+        .btn-cart:hover {
+            background-color: var(--secondary-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>{{data.title}}</h1>
+            <p>Order your favorite meals online</p>
+        </div>
+
+        <div id="foodItemList" class="row">
+        </div>
+    </div>
+
+    <div class="cart-section hide" id="cartSection">
+        <h4>Your Cart</h4>
+        <ul class="cart-items" id="cartItems">
+            <!-- Cart items will be dynamically added here -->
+        </ul>
+        <button class="btn btn-cart w-100" id="checkoutBtn">Proceed to Checkout</button>
+    </div>
+
+    <script>
+        const foodItemList = document.getElementById('foodItemList');
+        const cartSection = document.getElementById('cartSection');
+        const cartItems = document.getElementById('cartItems');
+        let cart = [];
+
+        const foodData = {{items | tojson}}
+        console.log(foodData)
+        function populateFoodItems() {
+            foodData.forEach((item) => {
+                const foodItemHTML = `
+                    <div class="col-lg-4 col-md-6 col-sm-12">
+                        <div class="food-item">
+                            <img src="${item.thumbnail}" alt="${item.name}">
+                            <div class="food-item-content">
+                                <h4>${item.name}</h4>
+                                <p>$${item.price}</p>
+                                <button class="btn w-100 add-to-cart" data-name="${item.name}" data-price="${item.price}" data-thumbnail="${item.thumbnail}">Add to Cart</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                foodItemList.insertAdjacentHTML('beforeend', foodItemHTML);
+            });
+
+            document.querySelectorAll('.add-to-cart').forEach((button) => {
+                button.addEventListener('click', (event) => {
+                    const name = event.target.getAttribute('data-name');
+                    const price = parseFloat(event.target.getAttribute('data-price'));
+                    const thumbnail = event.target.getAttribute('data-thumbnail');
+                    var temp = new FormData();
+                    temp.append("item",name)
+                    fetch('/add_to_cart',{
+                        method : "POST",
+                        body: temp
+                    })
+                    console.log("Request")
+                    cart.push({ name, price, thumbnail });
+                    updateCart();
+                });
+            });
+        }
+
+        function updateCart() {
+            cartItems.innerHTML = '';
+            cart.forEach((item, index) => {
+                const cartItemHTML = `
+                    <li>
+                        <span>${item.name} - $${item.price.toFixed(2)}</span>
+                        <button class="remove-btn" onclick="removeFromCart(${index})">x</button>
+                    </li>
+                `;
+                cartItems.insertAdjacentHTML('beforeend', cartItemHTML);
+            });
+            cartSection.classList.add('show');
+        }
+
+        // Remove item from cart
+        function removeFromCart(index) {
+            cart.splice(index, 1);
+            updateCart();
+        }
+
+        // Checkout button click
+        document.getElementById('checkoutBtn').addEventListener('click', () => {
+            alert('Proceeding to checkout...');
+            // Here you can redirect to the checkout page or handle checkout logic
+        });
+
+        // Initialize the food items on page load
+        window.onload = populateFoodItems;
+    </script>
+</body>
+</html>

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Website</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Arial', sans-serif;
+        }
+        .container {
+            max-width: 900px;
+            margin: 2rem auto;
+        }
+        .card {
+            border: none;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .form-label {
+            font-weight: bold;
+        }
+        .header, .footer {
+            background-color: #000;
+            color: #fff;
+            padding: 1rem;
+            text-align: center;
+            border-radius: 5px;
+            margin-bottom: 2rem;
+        }
+        .footer {
+            margin-top: 2rem;
+        }
+        .btn-submit {
+            background-color: #ff5722;
+            color: white;
+            border: none;
+        }
+        .btn-submit:hover {
+            background-color: #e64a19;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 id="title">Edit Website</h1>
+        </div>
+
+        <div class="card p-4">
+            <form id="editForm">
+                <div class="mb-3">
+                    <label for="title" class="form-label">Website Title</label>
+                    <input type="text" class="form-control" id="titleInput" name="title" placeholder="Enter website title">
+                </div>
+
+                <div class="mb-3">
+                    <label for="titlebarColor" class="form-label">Title Bar Color</label>
+                    <input type="color" class="form-control form-control-color" id="titlebarColorInput" name="titlebar_color" title="Choose your color">
+                </div>
+
+                <div class="mb-3">
+                    <label for="titleTextColor" class="form-label">Title Text Color</label>
+                    <input type="color" class="form-control form-control-color" id="titleTextColorInput" name="title_text_color" title="Choose your color">
+                </div>
+
+                <div class="mb-3">
+                    <label for="footerText" class="form-label">Footer Text</label>
+                    <input type="text" class="form-control" id="footerTextInput" name="footer_text" placeholder="Enter footer text">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Add Items</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" placeholder="Name" id="itemName">
+                        <input type="text" class="form-control" placeholder="Price" id="itemPrice">
+                        <input type="text" class="form-control" placeholder="Thumbnail URL" id="itemThumbnail">
+                        <button type="button" class="btn btn-outline-secondary" id="addItemBtn">Add Item</button>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <ul id="itemList" class="list-group"></ul>
+                </div>
+
+                <button type="submit" class="btn btn-submit w-100">Save Changes</button>
+            </form>
+        </div>
+
+        <div class="footer">
+            <p id="footer">Footer Text</p>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById("editForm");
+        const itemList = document.getElementById("itemList");
+        const addItemBtn = document.getElementById("addItemBtn");
+
+        form.addEventListener("submit", (event) => {
+            event.preventDefault();
+            const formData = new FormData(form);
+            const data = {};
+
+            for (let [key, value] of formData.entries()) {
+                data[key] = value;
+            }
+
+            fetch('/store', {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(data),
+            })
+                .then((response) => response.json())
+                .then((result) => {
+                    alert(result.status === "success" ? "Saved Successfully!" : "Error Saving Data.");
+                })
+                .catch((error) => console.error("Error:", error));
+        });
+
+        addItemBtn.addEventListener("click", () => {
+            const name = document.getElementById("itemName").value;
+            const price = document.getElementById("itemPrice").value;
+            const thumbnail = document.getElementById("itemThumbnail").value;
+
+            if (name && price && thumbnail) {
+                itemList.insertAdjacentHTML(
+                    "beforeend",
+                    `<li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>${name}</strong> - $${price}
+                            <br>
+                            <small>${thumbnail}</small>
+                        </div>
+                        <button class="btn btn-danger btn-sm" onclick="this.parentElement.remove()">Remove</button>
+                    </li>`
+                );
+
+                fetch('/store', {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        type: "items",
+                        value: [name, price, thumbnail],
+                    }),
+                })
+                    .then((response) => response.json())
+                    .then((result) => {
+                        console.log(result);
+                        console.log("items sent")
+                    })
+                    .catch((error) => console.error("Error:", error));
+            } else {
+                alert("Please fill out all fields.");
+            }
+        });
+    </script>
+</body>
+</html>
